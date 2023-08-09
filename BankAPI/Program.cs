@@ -1,3 +1,7 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using BankAPI.Data;
+using BankAPI.Repositories;
 
 namespace BankAPI;
 
@@ -6,6 +10,8 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        builder.Services.AddDbContext<AccountContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("AccountContext") ?? throw new InvalidOperationException("Connection string 'AccountContext' not found.")));
 
         // Add services to the container.
 
@@ -13,6 +19,8 @@ public class Program
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+        builder.Services.AddDbContext<AccountContext>();
 
         var app = builder.Build();
 
