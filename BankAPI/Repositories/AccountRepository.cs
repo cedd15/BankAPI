@@ -29,7 +29,6 @@ namespace BankAPI.Repositories
         {
             var account = new Account()
             {
-                UserName = username,
                 Password = password,
                 FirstName = firstName,
                 LastName = lastName,
