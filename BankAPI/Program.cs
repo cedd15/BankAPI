@@ -2,7 +2,6 @@
 using BankAPI.Repositories;
 using BankAPI.Helper;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 

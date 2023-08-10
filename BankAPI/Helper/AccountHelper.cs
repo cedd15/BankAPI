@@ -5,7 +5,18 @@ namespace BankAPI.Helper
 {
     public interface IAccountHelper
     {
+        /// <summary>
+        /// Converts password to hash
+        /// </summary>
+        /// <param name="password"></param>
+        /// <returns></returns>
         string HashPassword(string password);
+        /// <summary>
+        /// Verifies the input password
+        /// </summary>
+        /// <param name="inputPassword"></param>
+        /// <param name="accountPassword"></param>
+        /// <returns>Returns true if verified otherwise false</returns>
         bool IsAccountVerified(string inputPassword, string accountPassword);
         decimal GetBalanceAfterWithdrawal(decimal accountBalance, decimal withdrawalAmount);
         decimal GetBalanceAfterDeposit(decimal accountBalance, decimal depositAmount);
@@ -14,7 +25,7 @@ namespace BankAPI.Helper
     public class AccountHelper : IAccountHelper
     {
         /// <summary>
-        /// Convert password to hash
+        /// Converts password to hash
         /// </summary>
         /// <param name="password"></param>
         /// <returns>Hashed password</returns>
