@@ -42,7 +42,7 @@ namespace BankAPI.Helper
         {
             var hashPassword = HashPassword(inputPassword);
 
-            return inputPassword == accountPassword;
+            return hashPassword == accountPassword;
         }
 
         public decimal GetBalanceAfterWithdrawal(decimal accountBalance, decimal withdrawalAmount)

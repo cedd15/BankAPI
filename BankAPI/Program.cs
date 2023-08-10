@@ -1,45 +1,33 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using BankAPI.Data;
+﻿using BankAPI.Data;
 using BankAPI.Repositories;
 using BankAPI.Helper;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Hosting;
 
-namespace BankAPI;
+var builder = WebApplication.CreateBuilder(args);
 
-public class Program
+builder.Services.AddDbContext<AccountContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("AccountContext") ?? throw new InvalidOperationException("Connection string 'AccountContext' not found.")));
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<Program>());
+builder.Services.AddDbContext<AccountContext>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountHelper, AccountHelper>();
+
+var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
 {
-    public static void Main(string[] args)
-    {
-        var builder = WebApplication.CreateBuilder(args);
-        builder.Services.AddDbContext<AccountContext>(options =>
-            options.UseSqlServer(builder.Configuration.GetConnectionString("AccountContext") ?? throw new InvalidOperationException("Connection string 'AccountContext' not found.")));
-
-        // Add services to the container.
-
-        builder.Services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        builder.Services.AddDbContext<AccountContext>();
-        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
-        builder.Services.AddScoped<IAccountHelper, AccountHelper>();
-
-        var app = builder.Build();
-
-        // Configure the HTTP request pipeline.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthorization();
-
-
-        app.MapControllers();
-
-        app.Run();
-    }
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
+
+app.UseHttpsRedirection();
+app.UseAuthorization();
+
+app.MapControllers();
+
+app.Run();
