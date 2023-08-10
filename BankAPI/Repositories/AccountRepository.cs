@@ -8,7 +8,8 @@ namespace BankAPI.Repositories
     public interface IAccountRepository
     {
         Task<Account> GetAccount(int id);
-        Task<Account> CreateAccount(string username, string password, string firstName, string lastName, decimal depositAmount);
+        Task<Account> CreateAccount(string password, string firstName, string lastName, decimal depositAmount);
+        Task<Account> UpdateAccount(int id, Account account);
     }
 
     public class AccountRepository : IAccountRepository
@@ -25,7 +26,7 @@ namespace BankAPI.Repositories
             return await _accountContext.Account.FindAsync(id);
         }
 
-        public async Task<Account> CreateAccount(string username, string password, string firstName, string lastName, decimal depositAmount)
+        public async Task<Account> CreateAccount(string password, string firstName, string lastName, decimal depositAmount)
         {
             var account = new Account()
             {
@@ -36,6 +37,15 @@ namespace BankAPI.Repositories
             };
 
             _accountContext.Account.Add(account);
+            await _accountContext.SaveChangesAsync();
+
+            return account;
+        }
+
+        public async Task<Account> UpdateAccount(int id, Account account)
+        {
+            _accountContext.Entry(account).State = EntityState.Modified;
+
             await _accountContext.SaveChangesAsync();
 
             return account;

@@ -17,33 +17,22 @@ namespace BankAPI.Controllers
     public class AccountsController : ControllerBase
     {
         private readonly IAccountRepository _accountRepository;
+        private readonly IAccountHelper _accountHelper;
 
-        public AccountsController(IAccountRepository accountRepository)
+        public AccountsController(IAccountRepository accountRepository, IAccountHelper accountHelper)
         {
             _accountRepository = accountRepository;
+            _accountHelper = accountHelper;
         }
-
-        //// GET: api/Accounts
-        //[HttpGet]
-        //public async Task<ActionResult<IEnumerable<Account>>> GetAccount()
-        //{
-        //  if (_context.Account == null)
-        //  {
-        //      return NotFound();
-        //  }
-        //    return await _context.Account.ToListAsync();
-        //}
-
-        
 
         // POST: api/CreateAccount
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<IActionResult> CreateAccount(string username, string password, string firstName, string lastName, decimal depositAmount)
+        [HttpPost("CreateAccount")]
+        public async Task<IActionResult> CreateAccount(string password, string firstName, string lastName, decimal depositAmount)
         {
             try
             {
-                var account = await _accountRepository.CreateAccount(username, AccountHelper.HashPassword(password), firstName, lastName, depositAmount);
+                var account = await _accountRepository.CreateAccount(_accountHelper.HashPassword(password), firstName, lastName, depositAmount);
                 return Ok(account);
             }
             catch (Exception ex)
@@ -53,7 +42,7 @@ namespace BankAPI.Controllers
         }
 
         // GET: api/GetBalance/5
-        [HttpGet("{id}")]
+        [HttpGet("GetBalance/{id}")]
         public async Task<IActionResult> GetBalance(int id, string password)
         {
             try
@@ -62,9 +51,8 @@ namespace BankAPI.Controllers
 
                 if (account == null) return NotFound();
 
-                var hashPassword = AccountHelper.HashPassword(password);
-
-                if (hashPassword != account.Password) return BadRequest("Invalid password");
+                if (!_accountHelper.IsAccountVerified(password, account.Password)) 
+                    return BadRequest("Invalid password");
 
                 return Ok($"Your account balance is {account.Balance}");
             }
@@ -74,45 +62,64 @@ namespace BankAPI.Controllers
             }
         }
 
-        // POST: api/Accounts
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        //[HttpPost]
-        //public async Task<ActionResult<Account>> PostAccount(Account account)
-        //{
-        //  if (_context.Account == null)
-        //  {
-        //      return Problem("Entity set 'AccountContext.Account'  is null.");
-        //  }
-        //    _context.Account.Add(account);
-        //    await _context.SaveChangesAsync();
+        [HttpPut("WithdrawCash/{id}")]
+        public async Task<IActionResult> WithdrawCash(int id, string password, decimal withdrawalAmount)
+        {
+            var account = await _accountRepository.GetAccount(id);
 
-        //    return CreatedAtAction("GetAccount", new { id = account.Id }, account);
-        //}
+            if (account == null) return NotFound();
 
-        //// DELETE: api/Accounts/5
-        //[HttpDelete("{id}")]
-        //public async Task<IActionResult> DeleteAccount(int id)
-        //{
-        //    if (_context.Account == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    var account = await _context.Account.FindAsync(id);
-        //    if (account == null)
-        //    {
-        //        return NotFound();
-        //    }
+            if (_accountHelper.IsAccountVerified(password, account.Password))
+                return BadRequest("Invalid password");
 
-        //    _context.Account.Remove(account);
-        //    await _context.SaveChangesAsync();
+            var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(account.Balance, withdrawalAmount);
+            account.Balance = remainingBalance;
 
-        //    return NoContent();
-        //}
+            await _accountRepository.UpdateAccount(id, account);
 
-        //private bool AccountExists(int id)
-        //{
-        //    return (_context.Account?.Any(e => e.Id == id)).GetValueOrDefault();
-        //}
+            return Ok(account);
+        }
+
+        [HttpPut("DepositCash/{id}")]
+        public async Task<IActionResult> DepositCash(int id, string password, decimal depositAmount)
+        {
+            var account = await _accountRepository.GetAccount(id);
+
+            if (account == null) return NotFound();
+
+            if (_accountHelper.IsAccountVerified(password, account.Password))
+                return BadRequest("Invalid password");
+
+            var newBalance = _accountHelper.GetBalanceAfterDeposit(account.Balance, depositAmount);
+            account.Balance = newBalance;
+
+            await _accountRepository.UpdateAccount(id, account);
+
+            return Ok(account);
+        }
+
+        [HttpPut("TransferMoney")]
+        public async Task<IActionResult> TransferMoney(int fromId, string password, decimal transferAmount, int toId)
+        {
+            var fromAccount = await _accountRepository.GetAccount(fromId);
+            var toAccount = await _accountRepository.GetAccount(toId);
+
+            if (fromAccount == null || toAccount == null) return NotFound("Origin/destination account does not exist.");
+
+            if (_accountHelper.IsAccountVerified(password, fromAccount.Password))
+                return BadRequest("Invalid password");
+
+            var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(fromAccount.Balance, transferAmount);
+            fromAccount.Balance = remainingBalance;
+
+            var newBalance = _accountHelper.GetBalanceAfterDeposit(toAccount.Balance, transferAmount);
+            toAccount.Balance = newBalance;
+
+            await _accountRepository.UpdateAccount(fromId, fromAccount);
+            await _accountRepository.UpdateAccount(toId, toAccount);
+
+            return Ok(fromAccount);
+        }
 
     }
 }

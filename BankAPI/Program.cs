@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using BankAPI.Data;
 using BankAPI.Repositories;
+using BankAPI.Helper;
 
 namespace BankAPI;
 
@@ -19,8 +20,9 @@ public class Program
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
         builder.Services.AddDbContext<AccountContext>();
+        builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+        builder.Services.AddScoped<IAccountHelper, AccountHelper>();
 
         var app = builder.Build();
 
