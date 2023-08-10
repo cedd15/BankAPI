@@ -18,11 +18,13 @@ namespace BankAPI.Controllers
     {
         private readonly IAccountRepository _accountRepository;
         private readonly IAccountHelper _accountHelper;
+        private readonly ILogger<AccountsController> _logger;
 
-        public AccountsController(IAccountRepository accountRepository, IAccountHelper accountHelper)
+        public AccountsController(IAccountRepository accountRepository, IAccountHelper accountHelper, ILogger<AccountsController> logger)
         {
             _accountRepository = accountRepository;
             _accountHelper = accountHelper;
+            _logger = logger;
         }
 
         // POST: api/CreateAccount
@@ -37,6 +39,7 @@ namespace BankAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex.Message, ex.StackTrace);
                 return BadRequest(ex.Message);
             }
         }
@@ -58,6 +61,7 @@ namespace BankAPI.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex.Message, ex.StackTrace);
                 return BadRequest(ex.Message);
             }
         }
@@ -65,60 +69,84 @@ namespace BankAPI.Controllers
         [HttpPut("WithdrawCash/{id}")]
         public async Task<IActionResult> WithdrawCash(int id, string password, decimal withdrawalAmount)
         {
-            var account = await _accountRepository.GetAccount(id);
+            try
+            {
+                var account = await _accountRepository.GetAccount(id);
 
-            if (account == null) return NotFound();
+                if (account == null) return NotFound();
 
-            if (_accountHelper.IsAccountVerified(password, account.Password))
-                return BadRequest("Invalid password");
+                if (_accountHelper.IsAccountVerified(password, account.Password))
+                    return BadRequest("Invalid password");
 
-            var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(account.Balance, withdrawalAmount);
-            account.Balance = remainingBalance;
+                var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(account.Balance, withdrawalAmount);
+                account.Balance = remainingBalance;
 
-            await _accountRepository.UpdateAccount(id, account);
+                await _accountRepository.UpdateAccount(id, account);
 
-            return Ok(account);
+                return Ok(account);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex.StackTrace);
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("DepositCash/{id}")]
         public async Task<IActionResult> DepositCash(int id, string password, decimal depositAmount)
         {
-            var account = await _accountRepository.GetAccount(id);
+            try
+            { 
+                var account = await _accountRepository.GetAccount(id);
 
-            if (account == null) return NotFound();
+                if (account == null) return NotFound();
 
-            if (_accountHelper.IsAccountVerified(password, account.Password))
-                return BadRequest("Invalid password");
+                if (_accountHelper.IsAccountVerified(password, account.Password))
+                    return BadRequest("Invalid password");
 
-            var newBalance = _accountHelper.GetBalanceAfterDeposit(account.Balance, depositAmount);
-            account.Balance = newBalance;
+                var newBalance = _accountHelper.GetBalanceAfterDeposit(account.Balance, depositAmount);
+                account.Balance = newBalance;
 
-            await _accountRepository.UpdateAccount(id, account);
+                await _accountRepository.UpdateAccount(id, account);
 
-            return Ok(account);
+                return Ok(account);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex.StackTrace);
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPut("TransferMoney")]
         public async Task<IActionResult> TransferMoney(int fromId, string password, decimal transferAmount, int toId)
         {
-            var fromAccount = await _accountRepository.GetAccount(fromId);
-            var toAccount = await _accountRepository.GetAccount(toId);
+            try
+            {
+                var fromAccount = await _accountRepository.GetAccount(fromId);
+                var toAccount = await _accountRepository.GetAccount(toId);
 
-            if (fromAccount == null || toAccount == null) return NotFound("Origin/destination account does not exist.");
+                if (fromAccount == null || toAccount == null) return NotFound("Origin/destination account does not exist.");
 
-            if (_accountHelper.IsAccountVerified(password, fromAccount.Password))
-                return BadRequest("Invalid password");
+                if (_accountHelper.IsAccountVerified(password, fromAccount.Password))
+                    return BadRequest("Invalid password");
 
-            var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(fromAccount.Balance, transferAmount);
-            fromAccount.Balance = remainingBalance;
+                var remainingBalance = _accountHelper.GetBalanceAfterWithdrawal(fromAccount.Balance, transferAmount);
+                fromAccount.Balance = remainingBalance;
 
-            var newBalance = _accountHelper.GetBalanceAfterDeposit(toAccount.Balance, transferAmount);
-            toAccount.Balance = newBalance;
+                var newBalance = _accountHelper.GetBalanceAfterDeposit(toAccount.Balance, transferAmount);
+                toAccount.Balance = newBalance;
 
-            await _accountRepository.UpdateAccount(fromId, fromAccount);
-            await _accountRepository.UpdateAccount(toId, toAccount);
+                await _accountRepository.UpdateAccount(fromId, fromAccount);
+                await _accountRepository.UpdateAccount(toId, toAccount);
 
-            return Ok(fromAccount);
+                return Ok(fromAccount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex.StackTrace);
+                return BadRequest(ex.Message);
+            }
         }
 
     }
